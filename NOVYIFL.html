@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Для тебя 💖 + Три в ряд</title>
+
+<!-- Встроенный manifest (data:) чтобы работало в одном файле -->
+<link rel="manifest" href='data:application/manifest+json,{
+  "name":"Для тебя + Три в ряд",
+  "short_name":"Love & Match3",
+  "start_url":"./index.html",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#ff69b4",
+  "theme_color":"#ff69b4",
+  "orientation":"portrait",
+  "icons":[
+    {
+      "src":"data:image/svg+xml;utf8,<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><defs><radialGradient id=\"g\" cx=\"35%\" cy=\"30%\"><stop offset=\"0\" stop-color=\"%23fff\"/><stop offset=\"1\" stop-color=\"%23ff69b4\"/></radialGradient></defs><rect width=\"512\" height=\"512\" rx=\"96\" fill=\"%23ffd1e8\"/><path d=\"M256 448c-8 0-16-3-22-9l-150-150c-47-47-34-132 37-158 36-13 78 0 103 31 25-31 67-44 103-31 71 26 84 111 37 158L278 439c-6 6-14 9-22 9z\" fill=\"url(%23g)\"/></svg>",
+      "sizes":"512x512",
+      "type":"image/svg+xml",
+      "purpose":"any maskable"
+    }
+  ]
+}'>
+
+<meta name="theme-color" content="#ff69b4">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><rect width=%22128%22 height=%22128%22 rx=%2228%22 fill=%22%23ff69b4%22/><path d=%22M64 112c-3 0-6-1-9-4L28 81c-19-19-14-53 15-63 15-5 32 0 42 12 10-12 27-17 42-12 29 10 34 44 15 63l-27 27c-3 3-6 4-9 4Z%22 fill=%22%23fff%22/></svg>">
+
+<style>
+  /* ==== СТИЛИ (чуть урезал импорты, чтобы 1 файл работал даже офлайн без шрифтов) ==== */
+  :root{
+    --pink1:#ffb6c1; --pink2:#ff69b4; --peach:#ffa07a;
+    --btn:#ff69b4; --btn2:#ff85c1; --white:#fff;
+    --sel:#6EC1FF;
+    --board:max(320px, min(92vmin, 560px));
+    --cellGap:7px;
+    --glass: rgba(255,255,255,.18);
+  }
+
+  html,body{height:100%}
+  body{
+    margin:0;height:100vh;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(1200px 800px at 30% 20%, #fff0 0 50%, #ffffff18 50% 52%, #fff0 52%), linear-gradient(45deg,var(--pink1),var(--pink2),var(--peach),var(--pink1));
+    background-size:cover, 400% 400%;
+    animation:bgShift 12s ease infinite;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Dancing Script", sans-serif;
+    -webkit-tap-highlight-color: transparent; user-select:none;
+  }
+  @keyframes bgShift{0%{background-position:center,0% 50%}50%{background-position:center,100% 50%}100%{background-position:center,0% 50%}}
+  .hidden{display:none}
+
+  /* Кнопки */
+  .btn{
+    background:linear-gradient(180deg,#ff8bcf,#ff62b8);
+    color:var(--white);border:none;border-radius:22px;
+    padding:10px 18px;font-size:18px;cursor:pointer;
+    transition:transform .2s ease, filter .25s;
+    box-shadow:0 12px 26px rgba(255,105,180,.35), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+
+  /* ===== Экран: Любовь ===== */
+  .topbar{
+    position:fixed;top:10px;left:0;right:0;display:flex;gap:10px;
+    justify-content:center;z-index:50;pointer-events:auto;
+  }
+  .big-btn{
+    background:linear-gradient(180deg,#ff8bcf,#ff62b8);
+    color:#fff;border:none;border-radius:36px;
+    padding:18px 34px;font-size:24px;cursor:pointer;
+    transition:transform .2s ease, filter .25s;
+    box-shadow:0 16px 34px rgba(255,105,180,.45), inset 0 2px 0 rgba(255,255,255,.7);
+    z-index:10;
+  }
+  .big-btn:hover{filter:brightness(1.06); transform:scale(1.05)}
+  .big-btn:active{transform:scale(.99)}
+
+  /* Комплименты */
+  .compliment{
+    position:absolute;left:50%;
+    transform:translateX(-50%);
+    top:-10px;font-size:16px;color:white;white-space:nowrap;
+    text-shadow:0 0 14px rgba(255,255,255,.85), 0 0 22px rgba(255,255,255,.55);
+    animation:fallDown 5.2s cubic-bezier(.22,.61,.36,1) forwards;
+    pointer-events:none;z-index:100;
+  }
+  @keyframes fallDown{
+    0%  { transform:translate3d(-50%,-20px,0) scale(.96); opacity:0 }
+    6%  { opacity:1 }
+    100%{ transform:translate3d(-50%,100vh,0) scale(1); opacity:0 }
+  }
+  .ball{
+    position:fixed;z-index:80;pointer-events:auto;cursor:pointer;
+    width:44px;height:44px;border-radius:50%;
+    background:radial-gradient(30% 30% at 30% 30%, #fff, #ffffff00 70%), radial-gradient(60% 60% at 60% 60%, #fff6, #0000 70%);
+    box-shadow:inset -8px -10px 18px rgba(0,0,0,.12),0 7px 18px rgba(0,0,0,.18);
+    transition:transform .12s;
+  }
+  .ball:active{transform:scale(.92)}
+
+  /* ===== Экран: Игра ===== */
+  .wrap-game{ width:var(--board);max-width:96vw;display:flex;flex-direction:column;align-items:center;gap:10px }
+  .hud{
+    width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.2);
+  }
+  .title{font-weight:800;font-size:20px}
+  .legend{font-size:14px; opacity:.97}
+  .score, .moves, .coins{font-weight:800;font-size:18px}
+
+  .goals{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .goal{
+    display:flex;align-items:center;gap:8px;background:var(--glass);
+    color:#fff;border-radius:12px;padding:7px 10px;font-size:13px; backdrop-filter: blur(6px);
+    box-shadow:0 8px 20px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .svg-ico{ width:20px;height:20px; vertical-align:-4px }
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+  .boost-btn{
+    display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;border:0;cursor:pointer;
+    background:var(--glass); color:#fff; backdrop-filter: blur(6px); box-shadow:0 6px 16px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.38);
+    font-size:14px
+  }
+  .boost-btn.active{outline:2px solid #fff8}
+
+  .board{
+    width:var(--board);height:var(--board); position:relative;
+    display:grid;place-content:center;
+    grid-template-columns:repeat(8,1fr);
+    gap:var(--cellGap);
+    background:linear-gradient(180deg, #ffffff66, #ffffff1a);
+    padding:calc(var(--cellGap) + 4px);
+    border-radius:18px;
+    box-shadow:0 18px 40px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(0,0,0,.08);
+    user-select:none; touch-action:none;
+  }
+  .cell{
+    position:relative;
+    background:linear-gradient(180deg, #ffffffcc, #f4f4f488);
+    border-radius:14px;display:grid;place-items:center;
+    aspect-ratio:1/1; overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(0,0,0,.08);
+  }
+  .gem{
+    width:88%;height:88%;
+    display:block;position:relative;
+    background:var(--c,#ccc);
+    border-radius:12px;
+    transition:transform .12s ease, filter .12s ease;
+    box-shadow: inset 0 10px 18px rgba(255,255,255,.5), inset 0 -8px 16px rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.16);
+    will-change:transform, filter;
+  }
+  .gem::before{ content:'';position:absolute;inset:0;border-radius:inherit; background:radial-gradient(60% 50% at 30% 20%, #fff7, #ffffff00 60%); mix-blend-mode:screen; pointer-events:none; }
+  .selected .gem{outline:3px solid var(--sel); outline-offset:0; box-shadow:0 0 0 3px var(--sel), inset 0 0 0 1px #fff}
+  .disabled{opacity:.6; filter:grayscale(.6)}
+
+  /* формы */
+  .shape-circle {clip-path: circle(50% at 50% 50%)}
+  .shape-diamond{clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
+  .shape-triangle{clip-path: polygon(50% 6%, 4% 94%, 96% 94%)}
+  .shape-star{clip-path: polygon(50% 4%, 61% 35%, 96% 35%, 68% 57%, 78% 92%, 50% 72%, 22% 92%, 32% 57%, 4% 35%, 39% 35%)}
+  .shape-hex{clip-path: polygon(8% 30%, 50% 6%, 92% 30%, 92% 70%, 50% 94%, 8% 70%)}
+
+  /* спец-фишки */
+  .type-rocketH::after, .type-rocketV::after{
+    content:''; position:absolute; inset:0; border-radius:12px;
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,.6) 0 8px, rgba(255,255,255,0) 8px 16px);
+    mix-blend-mode:screen;
+  }
+  .type-rocketV::after{ background:repeating-linear-gradient(0deg, rgba(255,255,255,.6) 0 8px, rgba(255,255,255,0) 8px 16px) }
+  .type-bomb::after{ content:''; position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,0) 60%); mix-blend-mode:screen }
+  .type-rainbow{ background:conic-gradient(#ff6b6b,#ff9f40,#ffd93d,#6bcb77,#4d96ff,#a66cff,#ff7ab3)!important }
+
+  /* анимации */
+  .gemPop{animation:gemPop .22s cubic-bezier(.22,.8,.32,1.2)}
+  @keyframes gemPop{0%{transform:scale(.85)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .gemFade{animation:gemFade .28s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes gemFade{to{opacity:0; transform:scale(.85)}}
+  .gemFall{animation:gemFall .26s cubic-bezier(.2,.8,.2,1)}
+  @keyframes gemFall{from{transform:translateY(-18px)} to{transform:translateY(0)}}
+  .shake{animation:shake .18s ease}
+  @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+  .sweepH,.sweepV{ position:absolute; pointer-events:none; z-index:500; opacity:.75; background:linear-gradient(90deg,#fff0,#ffffff99 20%,#ffffffee 50%,#ffffff99 80%,#fff0); filter:blur(1px) }
+  .sweepH{height:100%; width:0; animation:sweepH 280ms ease forwards}
+  .sweepV{width:100%; height:0; animation:sweepV 280ms ease forwards}
+  @keyframes sweepH{to{width:100%}} @keyframes sweepV{to{height:100%}}
+  .wave{ position:absolute; inset:0; margin:auto; width:10px; height:10px; border-radius:50%; background:#fff6; filter:blur(1px); pointer-events:none; animation:wave .38s ease-out forwards }
+  @keyframes wave{to{transform:scale(14); opacity:0}}
+
+  /* модалки */
+  .overlay-modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:900; backdrop-filter: blur(3px) }
+  .modal{ background:#fff; color:#333; padding:18px 16px; border-radius:16px; width:min(96vw, 420px); text-align:center; box-shadow:0 18px 44px rgba(0,0,0,.25); font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif }
+  .modal h3{margin:0 0 10px 0} .modal p{margin:6px 0 14px 0} .modal .row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
+  .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#f3f3f3; border-radius:16px; font-size:13px}
+  .shop-grid{display:grid; grid-template-columns:1fr; gap:10px; margin-top:8px}
+  .item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; border-radius:12px; background:#fafafa; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,.05) }
+  .color-dot{width:22px;height:22px;border-radius:50%; box-shadow: inset 0 1px 0 #fff, 0 0 0 2px #0001}
+  .disabled-dot{opacity:.35; filter:grayscale(.6); pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- ===== Экран 1: Любовь ===== -->
+<section id="screen-love">
+  <div class="topbar">
+    <button id="spawnBalls" class="btn" aria-label="ЛОПАТЬ">ЛОПАТЬ</button>
+    <button id="clearBalls" class="btn" aria-label="Очистить">Очистить</button>
+    <button id="openGame" class="btn" aria-label="Играть">Играть 🎮</button>
+  </div>
+  <button class="big-btn" id="loveBtn">Нажми меня 💖</button>
+</section>
+
+<!-- ===== Экран 2: Игра (100 уровней + магазин + свободный режим) ===== -->
+<section id="screen-game" class="hidden">
+  <div class="wrap-game">
+    <div class="hud">
+      <div class="title">Три в ряд — PRO</div>
+      <div class="legend" id="legendText">Матчи по <b>фигуре</b>. Свайпай фишки. Создавай ракеты/бомбы/радугу.</div>
+    </div>
+
+    <div class="hud">
+      <div class="goals" id="goals"></div>
+      <div class="moves">Ходы: <span id="g-moves">0</span></div>
+      <div class="score">Очки: <span id="g-score">0</span></div>
+      <div class="coins">Монеты: <span id="g-coins">0</span></div>
+    </div>
+
+    <div class="toolbar">
+      <button id="btnShop" class="boost-btn">🛍️ Магазин</button>
+      <button id="btnFree" class="boost-btn">🎲 Свободный режим</button>
+      <button id="btnLevel" class="boost-btn">📜 Уровень: <span id="lvlLabel">1</span>/100</button>
+    </div>
+
+    <div class="toolbar" id="boostBar"></div>
+
+    <div id="gameBoard" class="board" aria-label="Игровое поле"></div>
+
+    <div class="hud">
+      <button id="g-new" class="btn">Новая игра</button>
+      <button id="backLove" class="btn">Назад 💖</button>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ===================== Экран «Любовь» + звук ===================== */
+let __audioCtx = null;
+function getAudioCtx(){
+  if (!__audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    __audioCtx = new AC({ latencyHint: 'interactive' });
+  }
+  if (__audioCtx.state === 'suspended') __audioCtx.resume();
+  return __audioCtx;
+}
+function unlockAudio(){
+  const ctx = getAudioCtx();
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  g.gain.value = 0; o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + 0.01);
+  window.removeEventListener('pointerdown', unlockAudio, true);
+  window.removeEventListener('click', unlockAudio, true);
+}
+window.addEventListener('pointerdown', unlockAudio, true);
+window.addEventListener('click', unlockAudio, true);
+document.addEventListener('visibilitychange', ()=>{ if(__audioCtx && __audioCtx.state==='suspended') __audioCtx.resume(); });
+
+let __popBuffer = null;
+function ensurePopBuffer(ctx){
+  if (__popBuffer) return __popBuffer;
+  const sr = ctx.sampleRate, dur = 0.20, len = Math.floor(sr*dur);
+  const buf = ctx.createBuffer(1, len, sr), ch = buf.getChannelData(0);
+  const f0=700, f1=1200, chirpTime=0.12;
+  for(let i=0;i<len;i++){
+    const t=i/sr, env=Math.pow(1 - t/dur, 2);
+    const ft = f0 + (f1-f0) * Math.min(t,chirpTime)/chirpTime;
+    const chirp = Math.sin(2*Math.PI*ft*t);
+    const noise = (Math.random()*2-1)*0.18;
+    ch[i] = (chirp*0.65 + noise) * env;
+  }
+  __popBuffer = buf; return buf;
+}
+function playPop(){
+  try{
+    const ctx = getAudioCtx(), buf = ensurePopBuffer(ctx);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    src.playbackRate.value = 0.95 + Math.random()*0.10;
+    const g = ctx.createGain(); g.gain.value = 0.9;
+    src.connect(g); g.connect(ctx.destination);
+    src.start();
+    src.onended = ()=>{ try{ src.disconnect(); g.disconnect(); }catch(_){} };
+    if (ctx.state === 'suspended') ctx.resume();
+  }catch(e){}
+}
+
+const complimentsMaster = [
+"Ты моя вселенная 💫","Я тебя люблю ❤️","Ты — чудо, которое случилось со мной 💕","Твоя улыбка освещает всё вокруг ☀️",
+"Ты самая красивая 😍","С тобой хочется быть всегда 💖","Ты вдохновляешь меня каждый день 🌸","Я счастлив, что у меня есть ты 💞",
+"Ты — моё сердце 💌","Ты лучшее, что со мной случалось ✨","Ты нежна как утренний свет","Твоя доброта — мой ориентир",
+"С тобой всё кажется возможным","Ты согреваешь меня взглядом","Твоя улыбка — моё спасение","Ты делаешь мир мягче","Твой голос — моя любимая музыка",
+"Ты моя тихая радость","С тобой я чувствую дом","Ты — мой самый верный друг и любовь","Я горжусь тем, что у меня есть ты",
+"Ты прекрасна, Тамирис 💕","Тамирис, твой смех — мой любимый звук","Ты — самое тёплое в моей жизни, Тамирис","Твои глаза — океан, где я тону",
+"Ты светишься изнутри","Твои слова лечат меня","Ты даришь смысл простым вещам","Ты — моё лучшее утро","Ты — моя мечта наяву",
+"Твоя естественность околдовывает","Ты делаешь меня лучше","Мне нравится, как ты смотришь","Ты — моё спокойствие в буре","Ты — мой любимый человек",
+"Твоя красота неподвластна времени","Твои прикосновения — будто дом","Ты уникальна и дорога","Ты — подарок судьбы","С тобой каждый день как праздник",
+"Ты умеешь слушать как никто","Твоя сила — в нежности","Ты — причина моих улыбок","Ты — самый тёплый свет в комнате","Мне нравится твой вкус в мелочах",
+"Твоя доброта — редкое сокровище","Я влюбляюсь в тебя снова и снова","Ты — моя настоящая радость","Тепло твоих рук — моё топливо","Ты делаешь меня спокойнее",
+"Ты — моё вдохновение","Твоя улыбка лечит усталость","Ты — мой нежный привкус счастья","Я люблю, как ты молчишь","С тобой легко и честно",
+"Ты даришь уют одним взглядом","Ты — моё маленькое чудо","Ты — мой солнечный луч","Твоя забота делает мир добрее",
+"Ты — моё утро и мой покой","Ты — идеал простоты и красоты","Ты — моё настоящее","Ты — моя любимая привычка",
+"Твоя искренность необыкновенна","Я чувствую себя лучше рядом с тобой","Ты — причина моего спокойного сна","Твои глаза говорят больше слов","Ты — мой смысл",
+"Ты — нежность в моём хаосе","Я дорожу каждым мгновением с тобой","Ты — моя вечная улыбка","Ты умеешь озарять мелочи",
+"Твоя красота — и внутри, и снаружи","Ты — моё утончённое счастье","Я люблю тебя просто так","Ты заставляешь моё сердце биться чаще",
+"Моё сердце с тобой","Ты делаешь обычный день волшебным","Ты — лучшее, что было со мной","Ты моя муза",
+"Ты прекрасна именно такая, какая ты есть","Ты — моя поддержка","Ты даёшь мне силы","Твоя мягкость — моя опора","Ты — моя тихая гавань",
+"С тобой любые проблемы меньше","Ты — самое доброе, что у меня есть","Ты — мой свет в окне","Твоя красота — тепло для души",
+"Мне нравится, как ты мечтаешь","Ты — моя нежность","Я люблю твои руки","Ты — моя улыбка каждый день",
+"Ты — лучшая часть меня","Тебя хочется обнимать бесконечно","Ты — мир в моём шуме","Я храню твои мелочи в сердце",
+"Ты — моя любимая мысль утром","Ты даришь мне уверенность","Ты — моя главная радость",
+"Тамирис, ты моё сердце и покой","Тамирис, с тобой я хочу быть рядом всегда","Тамирис, твоя улыбка — моя награда",
+"Твои слова согревают меня","Твоя энергия — моя поддержка","Ты — моя вдохновляющая правда",
+"Твоя нежность делает меня мягче","Твои глаза — мои любимые пейзажи","Твоя искренность дороже золота",
+"Ты — моё бесценное сокровище","Ты — причина моего тихого счастья","Ты даришь смысл моим дням",
+"Я люблю, как ты заботишься","Ты — мой свет в темноте","Твоя близость лечит",
+"Ты — мой любимый человек в любой толпе","Моё сердце узнаёт тебя первым","Ты меня дополняешь",
+"С тобой даже тишина приятна","Ты вдохновляешь на лучшее","Ты — моё тепло в холодный день",
+"Ты — утренняя радость","Ты — моя самая чистая любовь","Твоя улыбка — моя слабость",
+"С тобой всё кажется проще","Ты — верный свет на моём пути","Мне нравится, что ты рядом",
+"Ты — мой тихий праздник","Я счастлив быть с тобой рядом","Ты бесконечно милая",
+"Ты — мой личный космос","Ты окрашиваешь мир в лучшие цвета","Ты — моё настоящее открытие",
+"Ты — моя постоянная радость","Ты — причина моей нежности","Я хочу дарить тебе тепло",
+"Ты наполняешь мои дни смыслом","Мой мир стал лучше с тобой","Я берегу тебя, Тамирис 💗","Ты — моё всё"
+];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
+let pool = shuffle([...complimentsMaster]);
+
+const screenLove = document.getElementById('screen-love');
+const screenGame = document.getElementById('screen-game');
+const openGame = document.getElementById('openGame');
+const backLove = document.getElementById('backLove');
+function showLove(){ screenLove.classList.remove('hidden'); screenGame.classList.add('hidden'); }
+function showGame(){ screenLove.classList.add('hidden'); screenGame.classList.remove('hidden'); if(!Game.inited) Game.init(); }
+openGame.addEventListener('click', showGame);
+backLove.addEventListener('click', showLove);
+
+document.getElementById('loveBtn').addEventListener('click', ()=>{
+  if(pool.length===0) pool = shuffle([...complimentsMaster]);
+  const text = pool.pop();
+  const el = document.createElement('div');
+  el.className = 'compliment';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 5400);
+});
+
+document.getElementById('spawnBalls').addEventListener('click', ()=> spawnBalls(28));
+document.getElementById('clearBalls').addEventListener('click', clearBalls);
+
+function spawnBalls(count=24){
+  for(let i=0;i<count;i++){
+    const b = document.createElement('div');
+    b.className='ball';
+    const hue = Math.floor(Math.random()*360);
+    b.style.background = `radial-gradient(30% 30% at 30% 30%, #fff, #ffffff00 70%), radial-gradient(60% 60% at 60% 60%, #fff6, #0000 70%), radial-gradient(circle at 30% 30%, hsla(${hue},95%,90%,1), hsla(${hue},75%,60%,1))`;
+    const x = Math.random()*innerWidth;
+    const y = Math.random()*innerHeight;
+    b.style.left = (x-22)+'px';
+    b.style.top  = (y-22)+'px';
+    b.addEventListener('click', ()=>{
+      playPop();
+      b.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:0}],{duration:190,easing:'ease-out'});
+      setTimeout(()=>b.remove(), 200);
+    }, {passive:true});
+    document.body.appendChild(b);
+  }
+}
+function clearBalls(){ document.querySelectorAll('.ball').forEach(b=>b.remove()); }
+
+/* ======================== ИГРА: 100 уровней, магазин, фримод ======================== */
+const Game = (function(){
+  const LS_KEY = 'match3_pro_state_v1';
+  let state = {
+    coins: 0,
+    level: 1,
+    colors: { circle:"#4d96ff", diamond:"#ff6b6b", triangle:"#ffd93d", star:"#a66cff", hex:"#6bcb77" },
+    boosters: { rocketH:0, rocketV:0, bomb:0, rainbow:0 }
+  };
+  try{ const s = JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(s) state = Object.assign(state, s); }catch(e){}
+  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  function setCoins(v){ state.coins=Math.max(0,Math.floor(v)); coinsDOM.textContent=state.coins; save(); }
+  function addCoins(n){ setCoins(state.coins + n); }
+
+  const MAX_LEVEL = 100;
+
+  const ROWS = 8, COLS = 8;
+  const SHAPES = ["circle","diamond","triangle","star","hex"];
+  const BOOSTS = ["rocketH","rocketV","bomb","rainbow"];
+  const NORMAL='normal', ROCKETH='rocketH', ROCKETV='rocketV', BOMB='bomb', RAINBOW='rainbow';
+
+  const PALETTE = [
+    {name:'Красный', val:"#ff6b6b"},
+    {name:'Оранжевый', val:"#ff9f40"},
+    {name:'Жёлтый', val:"#ffd93d"},
+    {name:'Зелёный', val:"#6bcb77"},
+    {name:'Синий', val:"#4d96ff"},
+    {name:'Фиолетовый', val:"#a66cff"},
+    {name:'Розовый', val:"#ff7ab3"}
+  ];
+
+  const boardDOM = document.getElementById('gameBoard');
+  const goalsDOM = document.getElementById('goals');
+  const scoreDOM = document.getElementById('g-score');
+  const movesDOM = document.getElementById('g-moves');
+  const coinsDOM = document.getElementById('g-coins');
+  const lvlLabel = document.getElementById('lvlLabel');
+  const legendText = document.getElementById('legendText');
+  const boostBar = document.getElementById('boostBar');
+  const btnNew = document.getElementById('g-new');
+  const btnShop = document.getElementById('btnShop');
+  const btnFree = document.getElementById('btnFree');
+  const btnLevel = document.getElementById('btnLevel');
+
+  let board = [];
+  let score = 0;
+  let movesLeft = 0;
+  let goalsLeft = {};
+  let initialGoals = {};
+  let sel = null;
+  let busy = false;
+  let started = false;
+  let freeMode = false;
+  let activeBoost = null;
+
+  function colorOf(shape){ return state.colors[shape]; }
+  function createPiece(shape=randomOf(SHAPES), type=NORMAL){ return {shape, type}; }
+  function emptyCell(){ return { piece:null, ice:0, crate:0, rock:0 }; }
+  function inside(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
+  function randomOf(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+  function genLevelSpec(n){
+    const moves = 18 + Math.floor((n-1)/8);
+    const shapesPick = SHAPES.slice().sort(()=>Math.random()-.5).slice(0, 2 + (n%3===0?1:0));
+    const baseCount = 6 + Math.floor((n-1)/6);
+    const goals = {}; shapesPick.forEach((s,i)=> goals[s] = baseCount + i*2);
+
+    const iceCount   = Math.min(4 + Math.floor(n/7), 18);
+    const crateCount = Math.min(2 + Math.floor(n/10), 14);
+    const rockCount  = Math.min(Math.floor(n/18), 6);
+
+    const centerish = []; for(let r=2;r<=5;r++) for(let c=2;c<=5;c++) centerish.push([r,c]);
+    shuffle(centerish);
+    const coordsIce   = centerish.slice(0, Math.min(iceCount, centerish.length));
+    const coordsCrate = shuffle(allCoords()).slice(0, crateCount);
+    const coordsRock  = shuffle(allCoords()).slice(0, rockCount);
+
+    return { moves, goals, iceCoords: coordsIce, crateCoords: coordsCrate, rockCoords: coordsRock };
+  }
+  function allCoords(){ const arr=[]; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) arr.push([r,c]); return arr; }
+
+  function svgIcon(kind, color="#fff"){
+    if(kind==='rocket'){
+      return `<svg class="svg-ico" viewBox="0 0 24 24"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d0d0d0"/></linearGradient></defs><path d="M5 19l4-1 7-7 1-4-4 1-7 7-1 4z" fill="url(#g1)" stroke="#888" stroke-width=".5"/><path d="M8 16l2 2" stroke="#f55" stroke-width="2" stroke-linecap="round"/></svg>`;
+    }
+    if(kind==='bomb'){
+      return `<svg class="svg-ico" viewBox="0 0 24 24"><defs><radialGradient id="b1" cx="30%" cy="30%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ccc"/></radialGradient></defs><circle cx="12" cy="13" r="7" fill="url(#b1)" stroke="#777" stroke-width=".5"/><path d="M14 7c2-2 4-2 5 0" stroke="#333" stroke-width="1.2" fill="none"/><circle cx="19" cy="6" r="1.2" fill="#ffcc00"/></svg>`;
+    }
+    if(kind==='rainbow'){
+      return `<svg class="svg-ico" viewBox="0 0 24 24"><defs><radialGradient id="r1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ddd"/></radialGradient><linearGradient id="grad"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".2" stop-color="#ff9f40"/><stop offset=".4" stop-color="#ffd93d"/><stop offset=".6" stop-color="#6bcb77"/><stop offset=".8" stop-color="#4d96ff"/><stop offset="1" stop-color="#a66cff"/></linearGradient></defs><circle cx="12" cy="12" r="8" fill="url(#r1)" stroke="#888" stroke-width=".5"/><path d="M6 14a6 6 0 0 1 12 0" stroke="url(#grad)" stroke-width="3" fill="none"/></svg>`;
+    }
+    if(kind==='ice'){ return `<svg class="svg-ico" viewBox="0 0 24 24"><defs><linearGradient id="iceg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6e4ff"/><stop offset="1" stop-color="#e8f7ff"/></linearGradient></defs><rect x="4" y="4" width="16" height="16" rx="3" fill="url(#iceg)" stroke="#bde5ff"/></svg>`; }
+    if(kind==='crate'){ return `<svg class="svg-ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="#b57b43" stroke="#8a5a2f"/><path d="M6 8h12M6 12h12M6 16h12" stroke="#8a5a2f" stroke-width="1.2"/></svg>`; }
+    return `<svg class="svg-ico" viewBox="0 0 24 24"><defs><radialGradient id="sg" cx="30%" cy="30%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="${color}"/></radialGradient></defs><circle cx="12" cy="12" r="9" fill="url(#sg)" stroke="#0002"/></svg>`;
+  }
+
+  function renderGoalsUI(){
+    goalsDOM.innerHTML='';
+    const add = (html,label,val)=> { const d=document.createElement('div'); d.className='goal'; d.innerHTML = `${html} ${label}: <b>${Math.max(val,0)}</b>`; goalsDOM.appendChild(d); };
+    Object.keys(goalsLeft).forEach(k=>{
+      if(k==='ice'||k==='crate'){
+        add(svgIcon(k)+'', k==='ice'?'Лёд':'Ящики', goalsLeft[k]);
+      }else{
+        const color = colorOf(k);
+        const label = {circle:'Круги', diamond:'Ромбы', triangle:'Треуг.', star:'Звёзды', hex:'Шестиуг.'}[k] || k;
+        add(svgIcon('shape', color)+`<span class="chip" style="background:${color}22"> ${label} </span>`, goalsLeft[k]);
+      }
+    });
+  }
+
+  function renderBoostBar(){
+    boostBar.innerHTML='';
+    const map = {rocketH:'Ракета — ▶︎', rocketV:'Ракета — ▼', bomb:'Бомба', rainbow:'Радуга'};
+    BOOSTS.forEach(b=>{
+      const btn=document.createElement('button');
+      btn.className='boost-btn';
+      btn.dataset.boost=b;
+      btn.innerHTML = `${b==='rainbow'?svgIcon('rainbow'):b==='bomb'?svgIcon('bomb'):svgIcon('rocket')} ${map[b]} <b>${state.boosters[b]||0}</b>`;
+      btn.onclick=()=>{
+        if(state.boosters[b]<=0){ btn.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:220}); return; }
+        activeBoost = (activeBoost===b? null : b);
+        [...boostBar.children].forEach(x=>x.classList.toggle('active', x.dataset.boost===activeBoost));
+      };
+      boostBar.appendChild(btn);
+    });
+  }
+
+  function renderBoard(){
+    boardDOM.innerHTML='';
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cell = document.createElement('div');
+        cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c;
+
+        const data = board[r][c];
+        if(data.piece){
+          const g = document.createElement('div');
+          const clsShape = 'shape-'+data.piece.shape;
+          const typeCls = data.piece.type===ROCKETH?'type-rocketH':
+                          data.piece.type===ROCKETV?'type-rocketV':
+                          data.piece.type===BOMB?'type-bomb':
+                          data.piece.type===RAINBOW?'type-rainbow':'';
+          g.className = `gem ${clsShape} ${typeCls} gemPop`;
+          if(data.piece.type!==RAINBOW){
+            const col = colorOf(data.piece.shape);
+            g.style.setProperty('--c', col);
+            g.style.background = col;
+          }
+          cell.appendChild(g);
+        }
+        if(data.ice>0){ const o=document.createElement('div'); o.className='overlay ov-ice'; cell.appendChild(o); }
+        if(data.crate>0){ const o=document.createElement('div'); o.className='overlay ov-crate'; cell.appendChild(o); }
+        if(data.rock>0){ const o=document.createElement('div'); o.className='overlay ov-rock'; cell.appendChild(o); }
+
+        boardDOM.appendChild(cell);
+      }
+    }
+  }
+
+  function newLevel(n, keepCoins=true){
+    freeMode=false; activeBoost=null; legendText.textContent='Матчи по фигуре. Свайпай фишки. Создавай ракеты/бомбы/радугу.';
+    if(!keepCoins) setCoins(0);
+    const spec = genLevelSpec(n);
+    lvlLabel.textContent = n.toString();
+
+    board = Array.from({length:ROWS}, ()=> Array.from({length:COLS}, ()=> emptyCell()));
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) board[r][c].piece = createPiece();
+
+    avoidStartingMatches();
+    ensureAnyMove();
+
+    spec.iceCoords.forEach(([r,c])=>{ if(inside(r,c)) board[r][c].ice=1; });
+    spec.crateCoords.forEach(([r,c])=>{ if(inside(r,c)) board[r][c].crate=2; });
+    spec.rockCoords.forEach(([r,c])=>{ if(inside(r,c)) board[r][c].rock=3; });
+
+    score=0; movesLeft = spec.moves;
+    scoreDOM.textContent=score; movesDOM.textContent=movesLeft;
+
+    goalsLeft = Object.assign({}, spec.goals);
+    if(!goalsLeft.ice) goalsLeft.ice = 0; if(!goalsLeft.crate) goalsLeft.crate = 0;
+    initialGoals = JSON.parse(JSON.stringify(goalsLeft));
+    renderGoalsUI();
+    renderBoard();
+    renderBoostBar();
+  }
+
+  function avoidStartingMatches(){
+    let guard=0;
+    while(true){
+      const m = scanMatchesCells();
+      if(m.size===0) break;
+      m.forEach(key=>{
+        const [r,c]=key.split(',').map(Number);
+        board[r][c].piece = createPiece();
+      });
+      if(++guard>60) break;
+    }
+  }
+  function ensureAnyMove(){
+    let guard=0;
+    while(!hasAnyPossibleMove()){
+      reshufflePieces();
+      if(++guard>30) break;
+    }
+  }
+  function hasAnyPossibleMove(){
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const p = board[r][c].piece; if(!p) continue;
+        const dirs=[[1,0],[0,1]];
+        for(const [dr,dc] of dirs){
+          const r2=r+dr, c2=c+dc; if(!inside(r2,c2)) continue;
+          if(!board[r2][c2].piece) continue;
+          swapPieces(r,c,r2,c2);
+          const res = scanMatchesCells();
+          swapPieces(r,c,r2,c2);
+          if(res.size>0) return true;
+        }
+      }
+    }
+    return false;
+  }
+  function reshufflePieces(){
+    const list=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(board[r][c].crate===0 && board[r][c].rock===0 && board[r][c].piece) list.push(board[r][c].piece);
+      board[r][c].piece=null;
+    }
+    shuffle(list);
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(board[r][c].crate===0 && board[r][c].rock===0){
+        board[r][c].piece = list.pop() || createPiece();
+      }
+    }
+    renderBoard();
+  }
+
+  function canMatchCell(cell){ return cell && cell.piece && cell.piece.type!==RAINBOW; }
+  function scanMatchesCore(){
+    const clusters=[]; const cellsSet=new Set();
+    for(let r=0;r<ROWS;r++){
+      let run=1;
+      for(let c=1;c<=COLS;c++){
+        const same = c<COLS && canMatchCell(board[r][c]) && canMatchCell(board[r][c-1]) &&
+                     board[r][c].piece.shape===board[r][c-1].piece.shape;
+        if(same){ run++; continue; }
+        if(run>=3){
+          const group=[];
+          for(let k=c-run;k<c;k++){ group.push({r,c:k}); cellsSet.add(`${r},${k}`); }
+          clusters.push({cells:group, orient:'H', shape: board[r][c-1].piece.shape});
+        }
+        run=1;
+      }
+    }
+    for(let c=0;c<COLS;c++){
+      let run=1;
+      for(let r=1;r<=ROWS;r++){
+        const same = r<ROWS && canMatchCell(board[r][c]) && canMatchCell(board[r-1][c]) &&
+                     board[r][c].piece.shape===board[r-1][c].piece.shape;
+        if(same){ run++; continue; }
+        if(run>=3){
+          const group=[];
+          for(let k=r-run;k<r;k++){ group.push({r:k,c}); cellsSet.add(`${k},${c}`); }
+          clusters.push({cells:group, orient:'V', shape: board[r-1][c].piece.shape});
+        }
+        run=1;
+      }
+    }
+    for(let r=0;r<ROWS-1;r++) for(let c=0;c<COLS-1;c++){
+      if(!canMatchCell(board[r][c])) continue;
+      const sh=board[r][c].piece.shape;
+      if(canMatchCell(board[r][c+1]) && canMatchCell(board[r+1][c]) && canMatchCell(board[r+1][c+1]) &&
+         board[r][c+1].piece.shape===sh && board[r+1][c].piece.shape===sh && board[r+1][c+1].piece.shape===sh){
+        const sq=[{r,c},{r,c:c+1},{r:r+1,c},{r:r+1,c:c+1}];
+        clusters.push({cells:sq, orient:'SQUARE', shape:sh});
+        sq.forEach(p=>cellsSet.add(`${p.r},${p.c}`));
+      }
+    }
+    return {clusters, cells:cellsSet};
+  }
+  function scanMatchesCells(){ return scanMatchesCore().cells; }
+
+  function findMatchesAndMark(lastSwap){
+    const {clusters, cells} = scanMatchesCore();
+    if(cells.size===0) return null;
+
+    const specials=[]; const cleared = new Set([...cells]);
+    function preferTarget(cellsArr){
+      if(!lastSwap) return cellsArr[Math.floor(cellsArr.length/2)];
+      const targets = cellsArr.filter(p=>(p.r===lastSwap.r2&&p.c===lastSwap.c2)||(p.r===lastSwap.r1&&p.c===lastSwap.c1));
+      if(targets.length>0) return targets[0];
+      return cellsArr[Math.floor(cellsArr.length/2)];
+    }
+    clusters.forEach(cl=>{
+      const uniq=new Set(cl.cells.map(p=>`${p.r},${p.c}`));
+      const len=cl.cells.length; let type=null;
+      if(cl.orient==='SQUARE') type=BOMB;
+      else if(len>=5) type=RAINBOW;
+      else if(len===4) type=(cl.orient==='H'?ROCKETH:ROCKETV);
+      if(type){
+        const tgt=preferTarget(cl.cells);
+        specials.push({r:tgt.r,c:tgt.c,type,shape:cl.shape});
+        uniq.delete(`${tgt.r},${tgt.c}`);
+      }
+      uniq.forEach(k=>cleared.add(k));
+    });
+    return { cleared, specials, clusterCount: clusters.length };
+  }
+
+  function damageOverlay(r,c, power=1){
+    const cell=board[r][c];
+    let damaged=false;
+    if(cell.ice>0){ cell.ice=Math.max(0,cell.ice-power); if(goalsLeft.ice!=null && initialGoals.ice>0) goalsLeft.ice-=1; damaged=true; }
+    if(cell.crate>0){ cell.crate=Math.max(0,cell.crate-power); if(goalsLeft.crate!=null && initialGoals.crate>0) goalsLeft.crate-=1; damaged=true; }
+    if(cell.rock>0){ cell.rock=Math.max(0,cell.rock-power); damaged=true; }
+    return damaged;
+  }
+  function addScore(n=10){ score+=n; scoreDOM.textContent=score; }
+
+  function clearCells(setOfKeys){
+    const specialsToTrigger=[];
+    setOfKeys.forEach(k=>{
+      const [r,c]=k.split(',').map(Number);
+      const cell=board[r][c]; if(!cell) return;
+      const wasDamaged = damageOverlay(r,c,1);
+      if(cell.rock>0 || cell.crate>0){
+        // блокер остался
+      }else{
+        if(cell.piece){
+          const sh=cell.piece.shape;
+          if(goalsLeft[sh]!=null && initialGoals[sh]>0) goalsLeft[sh]-=1;
+          if(cell.piece.type!==NORMAL){
+            specialsToTrigger.push({r,c,type:cell.piece.type,shape:cell.piece.shape});
+          }
+          const idx=r*COLS+c; const dom=boardDOM.children[idx];
+          dom?.firstChild?.classList.add('gemFade');
+          cell.piece=null;
+          addScore(10);
+        }
+        if(wasDamaged) renderGoalsUI();
+      }
+    });
+    return specialsToTrigger;
+  }
+
+  function generateAfterClear(){
+    const wave=document.createElement('div'); wave.className='wave'; boardDOM.appendChild(wave); setTimeout(()=>wave.remove(),380);
+    for(let c=0;c<COLS;c++){
+      for(let r=ROWS-1;r>=0;r--){
+        if(!board[r][c].piece && board[r][c].crate===0 && board[r][c].rock===0){
+          let rr=r-1;
+          while(rr>=0 && (!board[rr][c].piece || board[rr][c].crate>0 || board[rr][c].rock>0)) rr--;
+          if(rr>=0){ board[r][c].piece = board[rr][c].piece; board[rr][c].piece = null; }
+        }
+      }
+      for(let r=0;r<ROWS;r++){
+        if(!board[r][c].piece && board[r][c].crate===0 && board[r][c].rock===0){
+          board[r][c].piece = createPiece();
+        }
+      }
+    }
+    renderBoard();
+    for(let i=0;i<boardDOM.children.length;i++) boardDOM.children[i].firstChild?.classList.add('gemFall');
+  }
+
+  function activateRocket(r,c,horizontal=true){
+    const sweep=document.createElement('div'); sweep.className = horizontal?'sweepH':'sweepV'; boardDOM.appendChild(sweep); setTimeout(()=>sweep.remove(), 320);
+    const affected=new Set();
+    if(horizontal){ for(let cc=0;cc<COLS;cc++) affected.add(`${r},${cc}`);} else { for(let rr=0;rr<ROWS;rr++) affected.add(`${rr},${c}`); }
+    return affected;
+  }
+  function activateBomb(r,c, radius=1){
+    const affected=new Set();
+    for(let rr=r-radius; rr<=r+radius; rr++) for(let cc=c-radius; cc<=c+radius; cc++){ if(inside(rr,cc)) affected.add(`${rr},${cc}`); }
+    return affected;
+  }
+  function activateRainbow(shape){
+    const affected=new Set();
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const p=board[r][c].piece; if(p && p.type!==RAINBOW && p.shape===shape) affected.add(`${r},${c}`); }
+    return affected;
+  }
+
+  function combineSpecials(a,b){
+    if((a.type===RAINBOW)&&(b.type===RAINBOW)){ const all=new Set(); for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) all.add(`${r},${c}`); return all; }
+    if(a.type===RAINBOW || b.type===RAINBOW){ const other = (a.type===RAINBOW)? b : a; return activateRainbow(other.shape); }
+    if(a.type===BOMB && b.type===BOMB){ return activateBomb(a.r,a.c,2); }
+    if((a.type===ROCKETH||a.type===ROCKETV) && (b.type===ROCKETH||b.type===ROCKETV)){ const set=new Set(); activateRocket(a.r,a.c,true).forEach(k=>set.add(k)); activateRocket(a.r,a.c,false).forEach(k=>set.add(k)); return set; }
+    if((a.type===BOMB && (b.type===ROCKETH||b.type===ROCKETV)) || (b.type===BOMB && (a.type===ROCKETH||a.type===ROCKETV))){
+      const bomb = a.type===BOMB?a:b; const roc = a.type===BOMB?b:a; const set=new Set();
+      activateBomb(bomb.r,bomb.c,1).forEach(k=>set.add(k)); activateRocket(roc.r,roc.c, roc.type===ROCKETH).forEach(k=>set.add(k)); return set;
+    }
+    const s=new Set();
+    (a.type===BOMB?activateBomb(a.r,a.c,1):activateRocket(a.r,a.c,a.type===ROCKETH)).forEach(k=>s.add(k));
+    (b.type===BOMB?activateBomb(b.r,b.c,1):activateRocket(b.r,b.c,b.type===ROCKETH)).forEach(k=>s.add(k));
+    return s;
+  }
+
+  boardDOM.addEventListener('click', e=>{
+    if(busy) return;
+    const cell = e.target.closest('.cell'); if(!cell) return;
+    const r=+cell.dataset.r, c=+cell.dataset.c;
+
+    if(activeBoost){ useBoost(activeBoost, r, c); return; }
+
+    if(!sel){ if(board[r][c].crate>0 || board[r][c].rock>0) return; sel={r,c}; cell.classList.add('selected'); return; }
+    if(sel.r===r && sel.c===c){ cell.classList.remove('selected'); sel=null; return; }
+    if(Math.abs(sel.r-r)+Math.abs(sel.c-c)!==1){ const prev=boardDOM.children[sel.r*COLS+sel.c]; prev?.classList.remove('selected'); sel={r,c}; cell.classList.add('selected'); return; }
+    const prev=boardDOM.children[sel.r*COLS+sel.c]; prev?.classList.remove('selected'); trySwap(sel.r,sel.c,r,c); sel=null;
+  });
+
+  (function setupSwipes(){
+    let start=null;
+    boardDOM.addEventListener('pointerdown',(e)=>{
+      if(busy || activeBoost) return;
+      const cell=e.target.closest('.cell'); if(!cell) return;
+      const r=+cell.dataset.r, c=+cell.dataset.c;
+      if(board[r][c].crate>0 || board[r][c].rock>0) return;
+      start={ r, c, x:e.clientX, y:e.clientY, id:e.pointerId };
+      boardDOM.setPointerCapture?.(e.pointerId);
+    },{capture:true});
+    boardDOM.addEventListener('pointermove',(e)=>{
+      if(busy || !start || e.pointerId!==start.id) return;
+      const dx=e.clientX-start.x, dy=e.clientY-start.y;
+      const cellW=boardDOM.clientWidth/COLS, cellH=boardDOM.clientHeight/ROWS;
+      const threshold=Math.min(cellW,cellH)*0.25;
+      if(Math.abs(dx)<threshold && Math.abs(dy)<threshold) return;
+      let r2=start.r, c2=start.c;
+      if(Math.abs(dx)>Math.abs(dy)) c2 += (dx>0?1:-1);
+      else                          r2 += (dy>0?1:-1);
+      const r1=start.r, c1=start.c; start=null;
+      if(!inside(r2,c2)) return;
+      trySwap(r1,c1,r2,c2);
+    },{capture:true});
+    boardDOM.addEventListener('pointerup', ()=>{ start=null; }, {capture:true});
+    boardDOM.addEventListener('pointercancel', ()=>{ start=null; }, {capture:true});
+  })();
+
+  function canSwap(r,c){ const cell=board[r][c]; return cell.crate===0 && cell.rock===0 && cell.piece; }
+  function swapPieces(r1,c1,r2,c2){ const t=board[r1][c1].piece; board[r1][c1].piece=board[r2][c2].piece; board[r2][c2].piece=t; }
+
+  function trySwap(r1,c1,r2,c2){
+    if(!inside(r1,c1)||!inside(r2,c2)) return;
+    if(Math.abs(r1-r2)+Math.abs(c1-c2)!==1) return;
+    if(!canSwap(r1,c1) || !canSwap(r2,c2)) return;
+
+    const p1=board[r1][c1].piece, p2=board[r2][c2].piece;
+
+    if(p1.type===RAINBOW || p2.type===RAINBOW){
+      const other = p1.type===RAINBOW?p2:p1;
+      busy=true;
+      board[r1][c1].piece=null; board[r2][c2].piece=null;
+      let affected;
+      if(other.type===RAINBOW){ affected=new Set(); for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) affected.add(`${r},${c}`); }
+      else{ affected = activateRainbow(other.shape); }
+      const specs=clearCells(affected);
+      renderGoalsUI(); generateAfterClear();
+      triggerSpecialsChain(specs, ()=>{
+        cascadeLoop(()=>{
+          movesLeft--; movesDOM.textContent=movesLeft;
+          if(!freeMode) checkWinLose();
+          busy=false;
+        });
+      });
+      return;
+    }
+
+    swapPieces(r1,c1,r2,c2);
+    const res = findMatchesAndMark({r1,c1,r2,c2});
+    if(!res){
+      swapPieces(r1,c1,r2,c2);
+      const a=boardDOM.children[r1*COLS+c1]?.firstChild;
+      const b=boardDOM.children[r2*COLS+c2]?.firstChild;
+      a?.classList.add('shake'); b?.classList.add('shake');
+      setTimeout(()=>{ a?.classList.remove('shake'); b?.classList.remove('shake'); }, 180);
+      return;
+    }
+
+    busy=true;
+    if(freeMode) addCoins(res.clusterCount);
+
+    const triggered = clearCells(res.cleared);
+    res.specials.forEach(sp=>{
+      board[sp.r][sp.c].piece = createPiece(sp.type===RAINBOW?randomOf(SHAPES):sp.shape, sp.type);
+    });
+    renderGoalsUI(); generateAfterClear();
+
+    triggerSpecialsChain(triggered, ()=>{
+      cascadeLoop(()=>{
+        movesLeft--; movesDOM.textContent=movesLeft;
+        if(!freeMode) checkWinLose();
+        busy=false;
+      });
+    });
+  }
+
+  function triggerSpecialsChain(list, done){
+    if(!list || list.length===0){ done(); return; }
+    let affected=new Set();
+    if(list.length>=2){ const a=list[0], b=list[1]; combineSpecials(a,b).forEach(k=>affected.add(k)); }
+    else {
+      const a=list[0];
+      if(a.type===BOMB) activateBomb(a.r,a.c,1).forEach(k=>affected.add(k));
+      if(a.type===ROCKETH) activateRocket(a.r,a.c,true).forEach(k=>affected.add(k));
+      if(a.type===ROCKETV) activateRocket(a.r,a.c,false).forEach(k=>affected.add(k));
+      if(a.type===RAINBOW){ const shape=mostCommonShape(); activateRainbow(shape).forEach(k=>affected.add(k)); }
+    }
+    const more = clearCells(affected);
+    generateAfterClear();
+    setTimeout(()=> triggerSpecialsChain(more, done), 220);
+  }
+  function mostCommonShape(){
+    const cnt={}; SHAPES.forEach(s=>cnt[s]=0);
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const p=board[r][c].piece; if(p && p.type!==RAINBOW) cnt[p.shape]++;
+    }
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+  }
+
+  function cascadeLoop(done){
+    const res = findMatchesAndMark(null);
+    if(!res){ done(); return; }
+    if(freeMode) addCoins(res.clusterCount);
+    const triggered = clearCells(res.cleared);
+    res.specials.forEach(sp=>{
+      board[sp.r][sp.c].piece = createPiece(sp.type===RAINBOW?randomOf(SHAPES):sp.shape, sp.type);
+    });
+    renderGoalsUI(); generateAfterClear();
+    triggerSpecialsChain(triggered, ()=> setTimeout(()=>cascadeLoop(done), 120));
+  }
+
+  function checkWinLose(){
+    const allDone = Object.keys(initialGoals).every(k=> (initialGoals[k]||0)<=0 || (goalsLeft[k]||0)<=0);
+    if(allDone){ levelWin(); return; }
+    if(movesLeft<=0){ levelLose(); return; }
+  }
+
+  function rewardCoinsFromGoals(){
+    let total=0; Object.values(initialGoals).forEach(v=> total += (v||0)); return Math.max(0, total);
+  }
+
+  function levelWin(){
+    const reward = rewardCoinsFromGoals();
+    addCoins(reward);
+    modal(`
+      <h3>Победа! 🎉</h3>
+      <p>Ты выполнил(а) все цели. Награда: <b>${reward}</b> монет.</p>
+      <div class="row">
+        <button class="btn" id="m-next">Следующий уровень</button>
+        <button class="btn" id="m-replay">Ещё раз</button>
+        <button class="btn" id="m-back">Назад 💖</button>
+      </div>
+    `, (root)=>{
+      root.querySelector('#m-next').onclick=()=>{ root.remove(); state.level=Math.min(MAX_LEVEL, state.level+1); save(); newLevel(state.level); };
+      root.querySelector('#m-replay').onclick=()=>{ root.remove(); newLevel(state.level); };
+      root.querySelector('#m-back').onclick =()=>{ root.remove(); showLove(); };
+    });
+  }
+  function levelLose(){
+    modal(`
+      <h3>Ходы закончились 😭</h3>
+      <p>Попробуем ещё раз или загляни в магазин.</p>
+      <div class="row">
+        <button class="btn" id="m-replay">Переиграть</button>
+        <button class="btn" id="m-shop">Магазин</button>
+        <button class="btn" id="m-back">Назад 💖</button>
+      </div>
+    `, (root)=>{
+      root.querySelector('#m-replay').onclick=()=>{ root.remove(); newLevel(state.level); };
+      root.querySelector('#m-shop').onclick  =()=>{ root.remove(); openShop(); };
+      root.querySelector('#m-back').onclick  =()=>{ root.remove(); showLove(); };
+    });
+  }
+
+  const btnShopEl = document.getElementById('btnShop');
+  btnShopEl.onclick = openShop;
+  function openShop(){
+    const boostersPackCost = 20;
+    const skipCost = 200;
+    const colorCost = 10;
+
+    const colorsInUse = new Set(Object.values(state.colors).map(v=>v.toLowerCase()));
+    const colorItems = SHAPES.map(shape=>{
+      const cur = state.colors[shape];
+      const opts = PALETTE.map(p=>{
+        const usedByOther = colorsInUse.has(p.val.toLowerCase()) && p.val.toLowerCase()!==cur.toLowerCase();
+        return `<button class="color-dot ${usedByOther?'disabled-dot':''}" data-shape="${shape}" data-color="${p.val}" title="${p.name}" style="background:${p.val}"></button>`;
+      }).join('');
+      return `<div class="item"><div><b>${nameOfShape(shape)}</b> <span class="chip">текущий</span> <span class="color-dot" style="background:${cur}"></span></div><div>${opts}</div></div>`;
+    }).join('');
+
+    const root = modal(`
+      <h3>🛍️ Магазин</h3>
+      <p class="chip">Монеты: <b id="shopCoins">${state.coins}</b></p>
+      <div class="shop-grid">
+        <div class="item">
+          <div><b>Пак усилителей</b> — по 1 шт. каждого (Ракета ▶︎, Ракета ▼, Бомба, Радуга)</div>
+          <button class="btn" id="buyPack">Купить за ${boostersPackCost}</button>
+        </div>
+        <div class="item">
+          <div><b>Пропустить уровень</b> — перейти к следующему</div>
+          <button class="btn" id="buySkip">Пропуск за ${skipCost}</button>
+        </div>
+        <div class="item">
+          <div><b>Изменить цвета фигур</b> — каждый выбор: ${colorCost} монет. Все цвета должны быть разными.</div>
+        </div>
+        ${colorItems}
+      </div>
+      <div style="margin-top:10px" class="row">
+        <button class="btn" id="closeShop">Закрыть</button>
+      </div>
+    `, (root)=>{
+      const shopCoins = root.querySelector('#shopCoins');
+      function refreshShopCoins(){ shopCoins.textContent = state.coins; coinsDOM.textContent = state.coins; }
+
+      root.querySelectorAll('.color-dot').forEach(btn=>{
+        btn.onclick = ()=>{
+          const shape = btn.dataset.shape;
+          const color = btn.dataset.color;
+          if(Object.entries(state.colors).some(([sh,v])=> sh!==shape && v.toLowerCase()===color.toLowerCase())){
+            alert('Нельзя назначать одинаковые цвета разным фигурам.');
+            return;
+          }
+          if(state.coins < colorCost){ alert('Недостаточно монет.'); return; }
+          state.colors[shape] = color;
+          setCoins(state.coins - colorCost);
+          save();
+          root.remove(); openShop();
+          renderBoard();
+          renderGoalsUI();
+        };
+      });
+
+      root.querySelector('#buyPack').onclick=()=>{
+        if(state.coins < boostersPackCost){ alert('Недостаточно монет.'); return; }
+        setCoins(state.coins - boostersPackCost);
+        BOOSTS.forEach(b=> state.boosters[b]=(state.boosters[b]||0)+1);
+        save(); renderBoostBar(); refreshShopCoins();
+      };
+      root.querySelector('#buySkip').onclick=()=>{
+        if(state.coins < skipCost){ alert('Недостаточно монет.'); return; }
+        setCoins(state.coins - skipCost); save();
+        root.remove();
+        state.level = Math.min(MAX_LEVEL, state.level+1);
+        save(); newLevel(state.level);
+      };
+      root.querySelector('#closeShop').onclick=()=> root.remove();
+    });
+  }
+
+  function nameOfShape(s){ return {circle:'Круги', diamond:'Ромбы', triangle:'Треуг.', star:'Звёзды', hex:'Шестиуг.'}[s] || s; }
+
+  function useBoost(kind, r, c){
+    if(state.boosters[kind]<=0){ activeBoost=null; renderBoostBar(); return; }
+    state.boosters[kind]--; save(); activeBoost=null; renderBoostBar();
+
+    busy=true;
+    let affected=new Set();
+    if(kind==='rocketH') affected = activateRocket(r,c,true);
+    if(kind==='rocketV') affected = activateRocket(r,c,false);
+    if(kind==='bomb')    affected = activateBomb(r,c,1);
+    if(kind==='rainbow'){ const shape=mostCommonShape(); affected = activateRainbow(shape); }
+    const specs = clearCells(affected);
+    generateAfterClear();
+    triggerSpecialsChain(specs, ()=>{
+      cascadeLoop(()=>{
+        if(!freeMode){ movesLeft--; movesDOM.textContent=movesLeft; checkWinLose(); }
+        busy=false;
+      });
+    });
+  }
+
+  btnFree.onclick = ()=>{
+    modal(`
+      <h3>Свободный режим 🎲</h3>
+      <p>Играй без целей и ограничений по ходам. За каждый <b>кластер 3+</b> — <b>+1</b> монета.</p>
+      <div class="row"><button class="btn" id="goFree">Старт</button><button class="btn" id="cancelF">Отмена</button></div>
+    `, (root)=>{
+      root.querySelector('#goFree').onclick=()=>{ root.remove(); startFreeMode(); };
+      root.querySelector('#cancelF').onclick=()=> root.remove();
+    });
+  };
+  function startFreeMode(){
+    freeMode=true; legendText.textContent='Свободная игра: +1 монета за каждый собранный кластер 3+.';
+    board = Array.from({length:ROWS}, ()=> Array.from({length:COLS}, ()=> emptyCell()));
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) board[r][c].piece = createPiece();
+    avoidStartingMatches(); ensureAnyMove();
+    goalsLeft={}; initialGoals={}; score=0; scoreDOM.textContent=score; movesLeft=Infinity; movesDOM.textContent='∞';
+    renderGoalsUI(); renderBoard(); renderBoostBar();
+  }
+
+  function modal(innerHTML, onReady){
+    const lay=document.createElement('div'); lay.className='overlay-modal';
+    lay.innerHTML = `<div class="modal">${innerHTML}</div>`;
+    document.body.appendChild(lay);
+    onReady?.(lay);
+    return lay;
+  }
+
+  btnNew.onclick = ()=>{ newLevel(state.level); };
+  btnLevel.onclick = ()=>{
+    const root=modal(`
+      <h3>Выбор уровня</h3>
+      <p>Текущий: <b>${state.level}</b> из 100</p>
+      <div class="row">
+        <input type="number" id="lvln" min="1" max="100" value="${state.level}" style="padding:8px;border-radius:8px;border:1px solid #ddd;width:120px"/>
+        <button class="btn" id="goLvl">Перейти</button>
+      </div>
+    `, (root)=>{
+      root.querySelector('#goLvl').onclick=()=>{
+        const v = parseInt(root.querySelector('#lvln').value||'1',10);
+        if(isNaN(v) || v<1 || v>100) return;
+        state.level = v; save(); root.remove(); newLevel(state.level);
+      };
+    });
+  };
+
+  function init(){
+    if(started) return;
+    started=true;
+    coinsDOM.textContent = state.coins;
+    lvlLabel.textContent = state.level;
+    newLevel(state.level);
+  }
+
+  return { init, get inited(){ return started; } };
+})();
+
+/* Запуск с экрана любви */
+const backLove = document.getElementById('backLove');
+backLove.addEventListener('click', ()=>{ screenLove.classList.remove('hidden'); screenGame.classList.add('hidden'); });
+function showLove(){ screenLove.classList.remove('hidden'); screenGame.classList.add('hidden'); }
+function showGame(){ screenLove.classList.add('hidden'); screenGame.classList.remove('hidden'); if(!Game.inited) Game.init(); }
+document.getElementById('openGame').addEventListener('click', showGame);
+showLove();
+
+/* Дополнительно: если появится sw.js рядом — попробуем зарегистрировать (не обязательно) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(()=>{/* ок, просто 1 файл */});
+  });
+}
+</script>
+</body>
+</html>
